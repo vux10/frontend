@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import Grid from '@mui/material/Grid';
-import CardActionArea from '@mui/material/CardActionArea';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import CardCategory from '../component/CardCategory';
-import { Col, Flex, Layout, Row, Button, Modal, Form, Input, Dropdown, Space } from 'antd';
-import { EditOutlined, EllipsisOutlined, SettingOutlined, DownOutlined  } from '@ant-design/icons';
-import { Avatar, Card } from 'antd';
+import { Col, Flex, Layout, Row, Modal, Form, Input, Dropdown, Space, Button, Typography, Card } from 'antd';
 import { fetchAllProductByCategoryId } from '../apis';
 
 const headerStyle = {
@@ -20,18 +14,20 @@ const headerStyle = {
     marginBottom: 12
   };
   const contentStyle = {
-    textAlign: 'center',
-    maxHeight: '80vh',
-    lineHeight: '120px',
-    
-    display: 'flex',
-    justifyContent: 'center',
   };
   const layoutStyle = {
     overflow: 'hidden',
   };
 
   const { Header, Footer, Sider, Content } = Layout;
+
+  const cardStyle = {
+    width: 620,
+  };
+  const imgStyle = {
+    display: 'block',
+    width: 273,
+  };
 
 const Product = () => {
     const [products, setProducts] = useState([]); 
@@ -47,43 +43,78 @@ const Product = () => {
             setProducts(data)
         }
         getAllProductByCategoryId(idCategory);
-        
-        // const fetchCategories = async () => {
-        //     try {
-        //         const response = await axios.get("http://localhost:5000/api/v1/category/getAll", { 
-        //             headers: { "Content-Type": "application/json" },
-        //         });
-        //         if (response.status === 200) setCategories(response.data);
-        //     } catch (error) {
-        //         console.log(error?.message); 
-        //     }
-        // };
-
-        // const fetchProducts = async () => {
-        //     try {
-        //         const productResponse = await axios.get("http://localhost:5000/api/v1/products/");
-        //         if (productResponse.status === 200) setProducts(productResponse.data);
-        //     } catch (error) {
-        //         console.log(error?.message);
-        //     }
-        // };
-
-        // fetchCategories();
-        // fetchProducts();
     }, []);
-
 
     return (
         <>
             <Flex gap="middle" wrap>
             <Layout style={layoutStyle}>
-            <Header style={headerStyle}>Category</Header>
+            <Header style={headerStyle}>Product List</Header>
             
             
             <Content style={contentStyle}>
-                
-                
-                
+              <Row>
+              {products.map(product => {
+                return (
+                  <>
+                    <Col span={12} key={product?._id} style={{
+                        display:'flex',
+                        justifyContent: 'center',
+                        padding: 12
+                    }} >
+                      <Card
+                        hoverable
+                        style={cardStyle}
+                        styles={{
+                          body: {
+                            padding: 0,
+                            overflow: 'hidden',
+                            
+                          },
+                        }}
+                      >
+                        <Flex justify="space-between">
+                          <img
+                            alt="avatar"
+                            src='https://elma2024.000webhostapp.com/images/products/z5191075237897_5e39629a50b47b2f3de27441918c8ff3.jpg'
+                            style={imgStyle}
+                          />
+                          <Flex
+                            vertical
+                            align="flex-end"
+                            justify="space-between"
+                            style={{
+                              padding: 32,
+                            }}
+                          >
+                            <Typography.Title level={4}>
+                              <p>{product?.name}</p>
+                            </Typography.Title>
+                            
+                            <desc><b>Description: </b>{product?.description}</desc>
+                            <p><b>Price: </b>{product?.price}</p>
+                            <p><b>Brand: </b>{product?.brand}</p>
+                            <p><b>Rating: </b>{product?.rating}</p>
+                            <p><b>Quantity: </b>{product?.quantity}</p>
+                            {product?.isBestSeller && <p>{product?.isBestSeller}</p>}
+                            
+                            <Flex>
+                              <Button type="primary" href="" target="_blank">
+                                Edit
+                              </Button>
+                              <Button type="primary" danger href="" target="_blank">
+                                Delete
+                              </Button>
+                            </Flex>
+                            
+                          </Flex>
+                        </Flex>
+                      </Card>
+                      </Col>
+                  </>
+                )
+              })}
+              </Row>
             </Content>
             </Layout>
 
