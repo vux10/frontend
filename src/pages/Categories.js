@@ -1,14 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import Grid from '@mui/material/Grid';
-import CardActionArea from '@mui/material/CardActionArea';
-import { Link, useNavigate } from 'react-router-dom';
-import CardCategory from '../component/CardCategory';
-import { Col, Flex, Layout, Row, Button, Modal, Form, Input, Dropdown, Space } from 'antd';
-import { EditOutlined, EllipsisOutlined, SettingOutlined, DownOutlined  } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
+import { Col, Flex, Layout, Row, Button, Modal, Form, Input} from 'antd';
 import { Avatar, Card } from 'antd';
-import { fetchCategories } from '../apis';
-import ColumnGroup from 'antd/es/table/ColumnGroup';
+import { deleteCategory, fetchCategories, postCreateNewCategory, putUpdateCategory } from '../apis';
 
 const { Meta } = Card;
 
@@ -24,7 +18,6 @@ const headerStyle = {
   };
   const contentStyle = {
     textAlign: 'center',
-    maxHeight: '80vh',
     lineHeight: '120px',
     
     display: 'flex',
@@ -33,25 +26,67 @@ const headerStyle = {
   const layoutStyle = {
     overflow: 'hidden',
   };
+  const { Header, Content } = Layout;
 
 export default function Categories() {
     const [categories, setCategories] = useState([]);
-    const [products, setProducts] = useState([]);
-    
-    const { Header, Footer, Sider, Content } = Layout;
-
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const showModal = () => {
-        setIsModalOpen(true);
-    };
-    const handleOk = () => {
-        setIsModalOpen(false);
-    };
-    const handleCancel = () => {
+    const [form] = Form.useForm();
+    const [isEditMode, setIsEditMode] = useState(false); // State to determine whether we're in edit mode or not
+    const [currentCategory, setCurrentCategory] = useState(null); // For storing the category being edited
+
+    const onCreateNewCategory = async (values) => {
+        const newCategory = await postCreateNewCategory(values)
+        console.log('postCreateNewCategory: ', newCategory);
+        setCategories(
+            [...categories, newCategory]
+        )
+        // setFormValues(values);
+        form.resetFields();
         setIsModalOpen(false);
     };
 
-    const navigate = useNavigate();
+    const onEditCategory = async (categoryId, values) => {
+        console.log('value:', values)
+        console.log('categoryId:', categoryId)
+        const updatedCategory = await putUpdateCategory(categoryId, values)
+        console.log('updatedCategory: ', updatedCategory);
+        setCategories(
+            categories.map((category) =>
+              category._id === categoryId ? updatedCategory : category
+            )
+        );
+        // setFormValues2(values);
+        form.resetFields();
+        setIsModalOpen(false);
+        setIsEditMode(false);
+        setCurrentCategory(null); // Reset current category after editing
+    };
+
+    const onDeleteCategory = async(categoryId) => {
+        const res = await deleteCategory(categoryId)
+        console.log('res: ', res);
+        if (res?.success === true) {
+            const filteredCategory = categories.filter(category => category._id !== categoryId)
+            setCategories(filteredCategory)
+        }
+    }
+
+    const openAddModal = () => {
+        setIsEditMode(false);
+        setIsModalOpen(true);
+        form.resetFields();
+      };
+    
+      const openEditModal = (category) => {
+        setIsEditMode(true);
+        setCurrentCategory(category);
+        form.setFieldsValue({
+            name: category?.name,
+            icon: category?.icon,
+          });
+        setIsModalOpen(true);
+      };
 
     useEffect( () => {
         const getAllCategories = async () => {
@@ -59,29 +94,6 @@ export default function Categories() {
             setCategories(data)
         }
         getAllCategories();
-        
-        // const fetchCategories = async () => {
-        //     try {
-        //         const response = await axios.get("http://localhost:5000/api/v1/category/getAll", { 
-        //             headers: { "Content-Type": "application/json" },
-        //         });
-        //         if (response.status === 200) setCategories(response.data);
-        //     } catch (error) {
-        //         console.log(error?.message); 
-        //     }
-        // };
-
-        // const fetchProducts = async () => {
-        //     try {
-        //         const productResponse = await axios.get("http://localhost:5000/api/v1/products/");
-        //         if (productResponse.status === 200) setProducts(productResponse.data);
-        //     } catch (error) {
-        //         console.log(error?.message);
-        //     }
-        // };
-
-        // fetchCategories();
-        // fetchProducts();
     }, []);
 
     return (
@@ -89,37 +101,52 @@ export default function Categories() {
         <Flex gap="middle" wrap>
         <Layout style={layoutStyle}>
           <Header style={headerStyle}>Category</Header>
-          <div style={{ marginLeft: 24}}>
+          <div style={{ marginLeft: 24, marginBottom: 24}}>
                 
-          <Button type="primary" onClick={showModal}>
-                Add New Category
+            <Button type="primary" onClick={() => openAddModal()}>
+                Add new category
             </Button>
-            <Modal title="Add New Category" open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
-            <Form
-                name="basic"
-                
-            >
-                <Form.Item
-                label="Category Name"
-                name="username"
-                rules={[
-                    {
-                    required: true,
-                    message: 'Please input your Category Name!',
-                    },
-                ]}
-                >
-                <Input />
-                </Form.Item>
-
-                <Form.Item
-                wrapperCol={{
-                    offset: 8,
-                    span: 16,
+            <Modal
+                open={isModalOpen}
+                title={isEditMode ? 'Edit Category' : 'Add new category'}
+                okText={isEditMode ? 'Update' : 'Create'}
+                cancelText="Cancel"
+                okButtonProps={{
+                autoFocus: true,
+                htmlType: 'submit',
                 }}
+                onCancel={() => setIsModalOpen(false)}
+                onOk={() => form.submit()}
+                destroyOnClose
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    name="form_in_modal"
+                    // initialValues={{
+                    // modifier: 'public',
+                    // }}
+                    clearOnDestroy
+                    onFinish={isEditMode ? (values) => onEditCategory(currentCategory._id, values) : (values) => onCreateNewCategory(values)}
                 >
-                </Form.Item>
-            </Form>
+                    <Form.Item
+                    name="name"
+                    label="Category name"
+                    rules={[
+                        {
+                        required: true,
+                        message: 'Please input the title of collection!',
+                        },
+                    ]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="icon" label="Link icon">
+                        <Input type="textarea"/>
+                    </Form.Item>
+                </Form>
+            
+                
             </Modal>
             </div>
           
@@ -135,41 +162,26 @@ export default function Categories() {
                         display:'flex',
                         justifyContent: 'center'
                     }} >
-                        {/* <CardActionArea
-                            onClick={() => navigate(`products?category=${category._id}`)}
-                            className="flex-center"
-                        >
-                            <CardCategory category={category} products={products} />
-                        </CardActionArea> */}
-                        <Link to={`/category/${category?._id}`}>
                             <Card
                                 style={{
                                 width: 300,
-                                display:'flex',
-                                justifyContent: 'center'
+                                display:'inline-block'
                                 }}
                             >
+                                <Link to={`/category/${category?._id}`}>
                                     <Meta
                                     avatar={<Avatar src={category?.icon} />}
                                     title={category?.name}
                                     />
-                                    <div className='button-group' style={{
-                                        marginTop: 16,
-                                        display:'flex',
-                                        flexDirection: 'column', 
-                                        justifyContent: 'center',
-                                        overflow: 'auto',
-                                        width: 240
-                                    }}>
-                                        <Button  type="primary" >
+                                </Link>
+                                        <Button  type="primary" onClick={() => openEditModal(category)}>
                                                 Edit
                                         </Button>
-                                        <Button danger type="primary" >
+                                        <Button danger type="primary" onClick={() => onDeleteCategory(category?._id)}>
                                                 Delete
                                         </Button>
-                                    </div>
                             </Card>
-                        </Link>
+                        
                     </Col>
                 ))}
             </Row>  
