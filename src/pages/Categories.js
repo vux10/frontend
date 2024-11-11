@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Col, Flex, Layout, Row, Button, Modal, Form, Input} from 'antd';
 import { Avatar, Card } from 'antd';
+
 import { deleteCategory, fetchCategories, postCreateNewCategory, putUpdateCategory } from '../apis';
+import { MainLayout } from './MainLayout';
 
 const { Meta } = Card;
 
@@ -97,7 +99,7 @@ export default function Categories() {
     }, []);
 
     return (
-        
+        <MainLayout>
         <Flex gap="middle" wrap>
         <Layout style={layoutStyle}>
           <Header style={headerStyle}>Category</Header>
@@ -190,5 +192,6 @@ export default function Categories() {
 
         
       </Flex>
+      </MainLayout>
     );
 }
