@@ -98,8 +98,6 @@ export default function Categories() {
         getAllCategories();
     }, []);
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
     const showModal = () => {
         setIsModalOpen(true);
     };
