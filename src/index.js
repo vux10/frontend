@@ -1,18 +1,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import CssBaseline from '@mui/material/CssBaseline';
-import Container from '@mui/material/Container';
+import { store } from './redux/store';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <CssBaseline />
-    <Container maxWidth="100%">
+    <Provider store={store}>
       <App />
-    </Container>
+    </Provider>
   </React.StrictMode>
 );
 

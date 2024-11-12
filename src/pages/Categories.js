@@ -1,46 +1,101 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import Grid from '@mui/material/Grid';
-import CardActionArea from '@mui/material/CardActionArea';
-import { useNavigate } from 'react-router-dom';
-import CardCategory from '../component/CardCategory';
-import { Box } from '@mui/material';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-// import MenuIcon from '@mui/icons-material/Menu';
-import { Button, Modal } from 'antd';
+import { Link } from 'react-router-dom';
+import { Col, Flex, Layout, Row, Button, Modal, Form, Input} from 'antd';
+import { Avatar, Card } from 'antd';
+
+import { deleteCategory, fetchCategories, postCreateNewCategory, putUpdateCategory } from '../apis';
+import { MainLayout } from './MainLayout';
+
+const { Meta } = Card;
+
+const headerStyle = {
+    textAlign: 'center',
+    color: '#fff',
+    height: 64,
+    paddingInline: 48,
+    lineHeight: '64px',
+    backgroundColor: '#4096ff',
+    fontSize: 32,
+    marginBottom: 12
+  };
+  const contentStyle = {
+    textAlign: 'center',
+    lineHeight: '120px',
+    
+    display: 'flex',
+    justifyContent: 'center',
+  };
+  const layoutStyle = {
+    overflow: 'hidden',
+  };
+  const { Header, Content } = Layout;
 
 export default function Categories() {
     const [categories, setCategories] = useState([]);
-    const [products, setProducts] = useState([]); 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [form] = Form.useForm();
+    const [isEditMode, setIsEditMode] = useState(false); // State to determine whether we're in edit mode or not
+    const [currentCategory, setCurrentCategory] = useState(null); // For storing the category being edited
 
-    const navigate = useNavigate();
+    const onCreateNewCategory = async (values) => {
+        const newCategory = await postCreateNewCategory(values)
+        console.log('postCreateNewCategory: ', newCategory);
+        setCategories(
+            [...categories, newCategory]
+        )
+        // setFormValues(values);
+        form.resetFields();
+        setIsModalOpen(false);
+    };
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const response = await axios.get("http://localhost:5000/api/v1/category/getAll", { 
-                    headers: { "Content-Type": "application/json" },
-                });
-                if (response.status === 200) setCategories(response.data);
-            } catch (error) {
-                console.log(error?.message); 
-            }
-        };
+    const onEditCategory = async (categoryId, values) => {
+        console.log('value:', values)
+        console.log('categoryId:', categoryId)
+        const updatedCategory = await putUpdateCategory(categoryId, values)
+        console.log('updatedCategory: ', updatedCategory);
+        setCategories(
+            categories.map((category) =>
+              category._id === categoryId ? updatedCategory : category
+            )
+        );
+        // setFormValues2(values);
+        form.resetFields();
+        setIsModalOpen(false);
+        setIsEditMode(false);
+        setCurrentCategory(null); // Reset current category after editing
+    };
 
-        const fetchProducts = async () => {
-            try {
-                const productResponse = await axios.get("http://localhost:5000/api/v1/products/");
-                if (productResponse.status === 200) setProducts(productResponse.data);
-            } catch (error) {
-                console.log(error?.message);
-            }
-        };
+    const onDeleteCategory = async(categoryId) => {
+        const res = await deleteCategory(categoryId)
+        console.log('res: ', res);
+        if (res?.success === true) {
+            const filteredCategory = categories.filter(category => category._id !== categoryId)
+            setCategories(filteredCategory)
+        }
+    }
 
-        fetchCategories();
-        fetchProducts();
+    const openAddModal = () => {
+        setIsEditMode(false);
+        setIsModalOpen(true);
+        form.resetFields();
+      };
+    
+      const openEditModal = (category) => {
+        setIsEditMode(true);
+        setCurrentCategory(category);
+        form.setFieldsValue({
+            name: category?.name,
+            icon: category?.icon,
+          });
+        setIsModalOpen(true);
+      };
+
+    useEffect( () => {
+        const getAllCategories = async () => {
+            const data = await fetchCategories()
+            setCategories(data)
+        }
+        getAllCategories();
     }, []);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,45 +113,97 @@ export default function Categories() {
     };
 
     return (
-        <Box className='Categories'>
-            <AppBar position="static" sx={{
-                marginBottom: "24px"
-            }}>
-                <Toolbar>
-                <IconButton
-                    size="large"
-                    edge="start"
-                    color="inherit"
-                    aria-label="menu"
-                    sx={{ mr: 2 }}
-                >
-                    {/* <MenuIcon /> */}
-                </IconButton>
-                <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                    Category
-                </Typography>
-                </Toolbar>
-            </AppBar>
-            <Button type="primary" onClick={showModal}>
-                Thêm loại sản phẩm
+        <MainLayout>
+        <Flex gap="middle" wrap>
+        <Layout style={layoutStyle}>
+          <Header style={headerStyle}>Category</Header>
+          <div style={{ marginLeft: 24, marginBottom: 24}}>
+                
+            <Button type="primary" onClick={() => openAddModal()}>
+                Add new category
             </Button>
-            <Modal title="Basic Modal" open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
-                <p>Some contents...</p>
-                <p>Some contents...</p>
-                <p>Some contents...</p>
+            <Modal
+                open={isModalOpen}
+                title={isEditMode ? 'Edit Category' : 'Add new category'}
+                okText={isEditMode ? 'Update' : 'Create'}
+                cancelText="Cancel"
+                okButtonProps={{
+                autoFocus: true,
+                htmlType: 'submit',
+                }}
+                onCancel={() => setIsModalOpen(false)}
+                onOk={() => form.submit()}
+                destroyOnClose
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    name="form_in_modal"
+                    // initialValues={{
+                    // modifier: 'public',
+                    // }}
+                    clearOnDestroy
+                    onFinish={isEditMode ? (values) => onEditCategory(currentCategory._id, values) : (values) => onCreateNewCategory(values)}
+                >
+                    <Form.Item
+                    name="name"
+                    label="Category name"
+                    rules={[
+                        {
+                        required: true,
+                        message: 'Please input the title of collection!',
+                        },
+                    ]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="icon" label="Link icon">
+                        <Input type="textarea"/>
+                    </Form.Item>
+                </Form>
+            
+                
             </Modal>
-            <Grid container spacing={2}>
+            </div>
+          
+          <Content style={contentStyle}>
+            
+            
+            <Row className='Categories' >
                 {categories.map((category) => (
-                    <Grid item xs={2} key={category._id}>
-                        <CardActionArea
-                            onClick={() => navigate(`products?category=${category._id}`)}
-                            className="flex-center"
-                        >
-                            <CardCategory category={category} products={products} />
-                        </CardActionArea>
-                    </Grid>
+                    
+                    <Col span={6} key={category._id} style={{
+                        display:'flex',
+                        justifyContent: 'center'
+                    }} >
+                            <Card
+                                style={{
+                                width: 300,
+                                display:'inline-block'
+                                }}
+                            >
+                                <Link to={`/category/${category?._id}`}>
+                                    <Meta
+                                    avatar={<Avatar src={category?.icon} />}
+                                    title={category?.name}
+                                    />
+                                </Link>
+                                        <Button  type="primary" onClick={() => openEditModal(category)}>
+                                                Edit
+                                        </Button>
+                                        <Button danger type="primary" onClick={() => onDeleteCategory(category?._id)}>
+                                                Delete
+                                        </Button>
+                            </Card>
+                        
+                    </Col>
                 ))}
-            </Grid>
-        </Box>
+            </Row>  
+          </Content>
+        </Layout>
+
+        
+      </Flex>
+      </MainLayout>
     );
 }
