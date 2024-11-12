@@ -49,6 +49,7 @@ const cartSlice = createSlice({
           (item) => item.productId._id !== action.payload 
         );
       })
+      
       .addCase(removeProductFromCart.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
