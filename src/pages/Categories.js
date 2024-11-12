@@ -98,6 +98,20 @@ export default function Categories() {
         getAllCategories();
     }, []);
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const showModal = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleOk = () => {
+        setIsModalOpen(false);
+    };
+
+    const handleCancel = () => {
+        setIsModalOpen(false);
+    };
+
     return (
         <MainLayout>
         <Flex gap="middle" wrap>
@@ -156,8 +170,6 @@ export default function Categories() {
             
             
             <Row className='Categories' >
-            
-            
                 {categories.map((category) => (
                     
                     <Col span={6} key={category._id} style={{
