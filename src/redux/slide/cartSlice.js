@@ -46,7 +46,7 @@ const cartSlice = createSlice({
         console.log('state.items JSON:', JSON.stringify(state.items.products));
         console.log('action.payload: ', action.payload)
         state.items.products = state.items.products.filter(
-          (item) => item.productId !== action.payload 
+          (item) => item.productId._id !== action.payload 
         );
       })
       .addCase(removeProductFromCart.rejected, (state, action) => {
